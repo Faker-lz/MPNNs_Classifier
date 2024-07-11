@@ -84,6 +84,7 @@ class BaseModel(torch.nn.Module):
 		self.DistMult_score = DistMult_score(self.p)
 		self.ConvE_score = ConvE_score(self.p)
 		self.Cosine_score = Cosine_score()
+		self.Clissificer_score = Classificer_score(self.p)
 
 		self.mlp1 = mlp(self.p.init_dim, self.inter_dim, self.act, self.p)
 		self.mlp2 = mlp(self.inter_dim, self.p.embed_dim, self.act, self.p) if self.p.gcn_layer == 2 else None
@@ -139,7 +140,19 @@ class BaseModel(torch.nn.Module):
 			
 			hr_class_embedding = self.model.hr_2_class_linear(torch.cat([sub_emb, rel_emb], dim=-1))
 			tail_class_embedding = self.model.t_2_class_linear(x)
+			hr_class_embedding = self.model.get_entities_class_attention(hr_class_embedding)
+			tail_class_embedding = self.model.get_entities_class_attention(tail_class_embedding)
 			score, original_score = self.Cosine_score(hr_class_embedding, tail_class_embedding)
+
+		elif self.p.score_func.lower() == 'classificer_linear':
+			if self.invest == 1:
+				print('score function: classificer')
+			
+			hr_class_embedding = self.model.hr_2_class_linear(torch.cat([sub_emb, rel_emb], dim=-1))
+			tail_class_embedding = self.model.t_2_class_linear(x)
+			hr_class_embedding = self.model.get_entities_class_attention(hr_class_embedding)
+			tail_class_embedding = self.model.get_entities_class_attention(tail_class_embedding)
+			score, original_score = self.Clissificer_score(hr_class_embedding, tail_class_embedding)
 
 		loss, score = self.loss(score, label, original_score, pos_neg_ent)
 		
@@ -201,6 +214,32 @@ class Cosine_score(torch.nn.Module):
 
 		return scores, 0
 
+class Classificer_score(torch.nn.Module):
+	def __init__(self, param=None) -> None:
+		super().__init__()
+		self.p = param
+
+		self.linear_score = torch.nn.Linear(self.p.class_num * 2, 1)
+	
+	def forward(self, hr_class_embedding, tail_class_embedding)->torch.tensor:
+		batch_size = hr_class_embedding.shape[0]
+		entities_size = tail_class_embedding.shape[0]
+		scores = torch.zeros(batch_size, entities_size).to(hr_class_embedding.device)
+
+		# for i in range(entities_size):
+		# 	tail_i = tail_class_embedding[i].unsqueeze(0).expand(batch_size, -1)
+			
+		# 	hr_tail_combination = torch.cat([hr_class_embedding, tail_i], dim=1)
+			
+		# 	scores[:, i] = self.linear_score(hr_tail_combination).squeeze()
+		
+		for i in range(batch_size):
+			hr_i = hr_class_embedding[i].unsqueeze(0).expand(entities_size, -1)
+			
+			hr_tail_combination = torch.cat([hr_i, tail_class_embedding], dim=1)
+			
+			scores[i, :] = self.linear_score(hr_tail_combination).squeeze()
+		return scores, 0
 
 
 class TransE_score(torch.nn.Module):

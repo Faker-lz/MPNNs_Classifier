@@ -11,6 +11,7 @@ import math
 from model.models import *
 from model.rgcn_model import *
 
+from wandb_config import wandb
 
 
 class Runner(object):
@@ -213,7 +214,15 @@ class Runner(object):
 				# ave_train_mrr = round(results ['mrr'] /count, 5)
 				ave_train_mrr = 0.0
 
-				self.logger.info('[E:{}| {}]: Train Loss:{:.5}, Train MRR:{:.5}, Val MRR:{:.5}\t{}'.format(epoch, step, np.mean(losses), ave_train_mrr, self.best_val_mrr, self.p.name))
+				self.logger.info('[Epoch:{}| {}]: Train Loss:{:.5}, Train MRR:{:.5}, Val MRR:{:.5}\t{}'.format(epoch, step, np.mean(losses), ave_train_mrr, self.best_val_mrr, self.p.name))
+				
+				wandb.log({
+					'Epoch': epoch,
+					'Step': step,
+					'Train Loss': np.mean(losses),
+					'Train MRR': ave_train_mrr,
+					'Val MRR': self.best_val_mrr
+				})
 
 		loss = np.mean(losses)
 
@@ -221,6 +230,10 @@ class Runner(object):
 	
 
 		self.logger.info('[Epoch:{}]:  Training Loss:{:.4}\n'.format(epoch, loss))
+		wandb.log({
+			"Epoch": epoch,
+			"Loss": loss
+		})
 		return loss
 
 
@@ -272,8 +285,20 @@ class Runner(object):
 				test_results = self.evaluate('test', epoch, 'test', f_test)
 
 				
-				self.logger.info('[Epoch {}]: Training Loss: {:.5}, Valid MRR: {:.5}\n\n'.format(epoch, train_loss, self.best_val_mrr)) #debug
+				# self.logger.info('[Epoch {}]: Training Loss: {:.5}, Valid MRR: {:.5}\n\n'.format(epoch, train_loss, self.best_val_mrr)) #debug
+				self.logger.info('[Epoch {}] Test: MRR: {:.5}, Hit@1: {:.5}, Hit@3: {:.5}, Hit@10: {:.5}, Val MRR: {:.5}\n\n'.format(epoch, test_results['mrr'], test_results['hits@1'],test_results['hits@3'],test_results['hits@10'],self.best_val_mrr)) #debug
 
+				wandb.log(
+					{
+						'Epoch': epoch,
+						'Left_MRR': test_results['left_mrr'],
+						'Right_MRR': test_results['right_mrr'],
+						'MRR': test_results['mrr'],
+						'Hit@1':test_results['hits@1'],
+						'Hit@3':test_results['hits@3'],
+						'Hit@10':test_results['hits@10']
+					}
+				)
 		
 		
 # %%		
@@ -285,12 +310,12 @@ if __name__ == '__main__':
 	######################## compgcn
 	parser.add_argument('-data',		dest='dataset',         default='WN18RR',            help='Dataset to use, default: FB15k-237')
 	parser.add_argument('-model',		dest='model',		default='kbgat',		help='Model Name')
-	parser.add_argument('-score_func',	dest='score_func',	default='cosine',		help='Score Function for Link prediction')
+	parser.add_argument('-score_func',	dest='score_func',	default='classificer_linear',		help='Score Function for Link prediction')
 	parser.add_argument('-opn',             dest='opn',             default='sub',                 help='Composition Operation to be used in CompGCN')
 	parser.add_argument('-loss_func',	dest='loss_func',	default='bce',		help='Loss Function for Link prediction')
 	
 
-	parser.add_argument('-batch',           dest='batch_size',      default=128,    type=int,       help='Batch size')
+	parser.add_argument('-batch',           dest='batch_size',      default=256,    type=int,       help='Batch size')
 	parser.add_argument('-kill_cnt',           dest='kill_cnt',      default=60,    type=int,       help='early stopping')
 	parser.add_argument("-evaluate_every", type=int, default=1,  help="perform evaluation every n epochs")
 	parser.add_argument('-gamma',		type=float,             default=40.0,			help='Margin in the transe score')

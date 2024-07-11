@@ -227,11 +227,11 @@ class KBGAT_Model(torch.nn.Module):
         return x, r
 
     def get_entities_class_attention(self, entities_embedding):
-        score = torch.matmul(self.query(entities_embedding), self.key(self.class_embedding).t())
+        score = torch.matmul(entities_embedding @ self.query, (self.class_embedding.weight @ self.key).t())
 
         score = torch.softmax(score, dim=-1)
 
-        weight_class_embeddings = torch.matmul(score, self.value(self.class_embedding))
+        weight_class_embeddings = torch.matmul(score, self.class_embedding.weight @ self.value)
 
         return weight_class_embeddings
 
