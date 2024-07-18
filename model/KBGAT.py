@@ -112,11 +112,13 @@ class GAT(torch.nn.Module):
 
         # W matrix to convert h_input to h_output dimension
         
-        self.W = get_param((relation_dim,  embed_dim))
+        self.W = get_param((relation_dim,  relation_dim))
 
 
         self.out_att = GATLayer(num_nodes, nhid * nheads,
-                                             nheads * nhid, embed_dim,
+                                             nheads * nhid, 
+                                            #  embed_dim,
+                                             relation_dim,
                                              dropout=dropout,
                                              alpha=alpha,
                                              concat=False
@@ -183,7 +185,7 @@ class KBGAT_Model(torch.nn.Module):
         self.class_num = self.p.class_num
 
         self.class_embedding = torch.nn.Embedding(self.class_num, self.class_num)
-        self.hr_2_class_linear = torch.nn.Linear(self.embed_dim * 2, self.class_num)
+        self.h_2_class_linear = torch.nn.Linear(self.embed_dim, self.class_num)
         self.t_2_class_linear = torch.nn.Linear(self.embed_dim, self.class_num)
 
         self.query = get_param((self.class_num, self.class_num))

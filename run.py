@@ -245,10 +245,10 @@ class Runner(object):
 		###########debug
 
 		kill_cnt = 0
-		f_test = open(os.path.join(self.p.output_dir, 'mrr_best_scores_'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'.txt'), 'w')
-		f_train_result =  open(os.path.join(self.p.output_dir, 'mrr_train_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'.txt'), 'w')
-		f_val_result = open(os.path.join(self.p.output_dir, 'mrr_val_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'.txt'), 'w')
-		f_test_result = open(os.path.join(self.p.output_dir, 'mrr_test_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'.txt'), 'w')
+		f_test = open(os.path.join(self.p.output_dir, 'mrr_best_scores_'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'_'+str(self.p.batch_size)+'.txt'), 'w')
+		f_train_result =  open(os.path.join(self.p.output_dir, 'mrr_train_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'_'+str(self.p.batch_size)+'.txt'), 'w')
+		f_val_result = open(os.path.join(self.p.output_dir, 'mrr_val_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'_'+str(self.p.batch_size)+'.txt'), 'w')
+		f_test_result = open(os.path.join(self.p.output_dir, 'mrr_test_scores'+str(self.p.lr)+'_'+str(self.p.hid_drop)+'_'+str(self.p.l2)+'_'+str(self.p.seed)+'_'+str(self.p.batch_size)+'.txt'), 'w')
 
 		
 
@@ -310,13 +310,14 @@ if __name__ == '__main__':
 	######################## compgcn
 	parser.add_argument('-data',		dest='dataset',         default='WN18RR',            help='Dataset to use, default: FB15k-237')
 	parser.add_argument('-model',		dest='model',		default='kbgat',		help='Model Name')
-	parser.add_argument('-score_func',	dest='score_func',	default='classificer_linear',		help='Score Function for Link prediction')
+	# parser.add_argument('-score_func',	dest='score_func',	default='classificer_linear',		help='Score Function for Link prediction')
+	parser.add_argument('-score_func',	dest='score_func',	default='conve',		help='Score Function for Link prediction')
 	parser.add_argument('-opn',             dest='opn',             default='sub',                 help='Composition Operation to be used in CompGCN')
 	parser.add_argument('-loss_func',	dest='loss_func',	default='bce',		help='Loss Function for Link prediction')
 	
 
-	parser.add_argument('-batch',           dest='batch_size',      default=256,    type=int,       help='Batch size')
-	parser.add_argument('-kill_cnt',           dest='kill_cnt',      default=60,    type=int,       help='early stopping')
+	parser.add_argument('-batch',           dest='batch_size',      default=512,    type=int,       help='Batch size')
+	parser.add_argument('-kill_cnt',           dest='kill_cnt',      default=100,    type=int,       help='early stopping')
 	parser.add_argument("-evaluate_every", type=int, default=1,  help="perform evaluation every n epochs")
 	parser.add_argument('-gamma',		type=float,             default=40.0,			help='Margin in the transe score')
 	parser.add_argument('-gpu',		type=str,               default='0',			help='Set GPU Ids : Eg: For CPU = -1, For Single GPU = 0')
@@ -393,7 +394,7 @@ if __name__ == '__main__':
 	parser.add_argument("-nheads", type=int,  default=2	, help="Multihead attention SpGAT")
 	####
 	parser.add_argument("-read_setting", default='no_negative_sampling',type=str,required=False, help="different reading setting: no_negative_sampling or negative_sampling")
-	parser.add_argument("-class_num", default=128, type=int, help="The classes number of the combine about entities and relations")
+	parser.add_argument("-class_num", default=100, type=int, help="The classes number of the combine about entities and relations")
 	
 	args = parser.parse_args()
 

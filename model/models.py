@@ -132,13 +132,16 @@ class BaseModel(torch.nn.Module):
 				print('score function: conve')
 
 			# print('sss', sub_emb.size(), rel_emb.size(), x.size(), r.size(), sub.size(), rel.size())
-			score, original_score = self.ConvE_score(sub_emb, rel_emb, x, label, pos_neg_ent)
+			h_class_embedding = self.model.get_entities_class_attention(self.model.h_2_class_linear(sub_emb))
+			tail_class_embedding = self.model.get_entities_class_attention(self.model.t_2_class_linear(x))
+			score, original_score = self.ConvE_score(h_class_embedding, rel_emb, tail_class_embedding, label, pos_neg_ent)
+
 
 		elif self.p.score_func.lower() == 'cosine':
 			if self.invest == 1:
 				print('score function: cosin')
 			
-			hr_class_embedding = self.model.hr_2_class_linear(torch.cat([sub_emb, rel_emb], dim=-1))
+			hr_class_embedding = self.model.hr_2_class_linear(sub_emb, dim=-1)
 			tail_class_embedding = self.model.t_2_class_linear(x)
 			hr_class_embedding = self.model.get_entities_class_attention(hr_class_embedding)
 			tail_class_embedding = self.model.get_entities_class_attention(tail_class_embedding)
@@ -301,25 +304,30 @@ class ConvE_score(torch.nn.Module):
 		self.p = params
 		self.bn0		= torch.nn.BatchNorm2d(1)
 		self.bn1		= torch.nn.BatchNorm2d(self.p.num_filt)
-		self.bn2		= torch.nn.BatchNorm1d(self.p.embed_dim)
+		# self.bn2		= torch.nn.BatchNorm1d(self.p.embed_dim)
+		self.bn2		= torch.nn.BatchNorm1d(self.p.class_num)
 		
 		self.hidden_drop	= torch.nn.Dropout(self.p.hid_drop)
 		self.hidden_drop2	= torch.nn.Dropout(self.p.hid_drop2)
 		self.feature_drop	= torch.nn.Dropout(self.p.feat_drop)
 		self.m_conv1		= torch.nn.Conv2d(1, out_channels=self.p.num_filt, kernel_size=(self.p.ker_sz, self.p.ker_sz), stride=1, padding=0, bias=self.p.bias)
 
-		flat_sz_h		= int(2*self.p.k_w) - self.p.ker_sz + 1
+		# flat_sz_h		= int(2*self.p.k_w) - self.p.ker_sz + 1
+		flat_sz_h		= int(self.p.k_w) - self.p.ker_sz + 1
 		flat_sz_w		= self.p.k_h 	    - self.p.ker_sz + 1
 		self.flat_sz		= flat_sz_h*flat_sz_w*self.p.num_filt
-		self.fc			= torch.nn.Linear(self.flat_sz, self.p.embed_dim)
+		# self.fc			= torch.nn.Linear(self.flat_sz, self.p.embed_dim)
+		self.fc			= torch.nn.Linear(self.flat_sz, self.p.class_num)
 
 		self.register_parameter('bias', Parameter(torch.zeros(self.p.num_ent)))
 
 	def concat(self, e1_embed, rel_embed):
-		e1_embed	= e1_embed. view(-1, 1, self.p.embed_dim)
-		rel_embed	= rel_embed.view(-1, 1, self.p.embed_dim)
+		# e1_embed	= e1_embed. view(-1, 1, self.p.embed_dim)
+		e1_embed	= e1_embed. view(-1, 1, self.p.class_num)
+		rel_embed	= rel_embed.view(-1, 1, self.p.class_num)
 		stack_inp	= torch.cat([e1_embed, rel_embed], 1)
-		stack_inp	= torch.transpose(stack_inp, 2, 1).reshape((-1, 1, 2*self.p.k_w, self.p.k_h))
+		# stack_inp	= torch.transpose(stack_inp, 2, 1).reshape((-1, 1, 2*self.p.k_w, self.p.k_h))
+		stack_inp	= torch.transpose(stack_inp, 2, 1).reshape((-1, 1, self.p.k_w, self.p.k_h))
 		return stack_inp
 
 	def forward(self, sub, rel, x, label, pos_neg_ent=None):
@@ -336,7 +344,9 @@ class ConvE_score(torch.nn.Module):
 		x				= self.hidden_drop2(x)
 		x				= self.bn2(x)
 		x				= F.relu(x)
-
+		
+		x = torch.nn.functional.normalize(x, dim=-1)
+		all_ent = torch.nn.functional.normalize(all_ent, dim=-1)
 		x = torch.mm(x, all_ent.transpose(1,0))
 		x += self.bias.expand_as(x)
 		original_score = x

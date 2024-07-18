@@ -4,6 +4,7 @@
 log/
 output_test/WN18RR_KB_GAT/testrun0.001_0.3_0.0_41504
 nohup.out
+nohup.log
 data/
 output_test/
 config/

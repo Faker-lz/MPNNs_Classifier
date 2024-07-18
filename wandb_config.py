@@ -7,10 +7,13 @@ wandb.init(
 
     # track hyperparameters and run metadata
     config={
-    "class":128,
-    "dim":"768_512_256",
-    "split":20,
-    "layers":3,
-    "epochs": 50,
+    'score_func': 'conve',
+    'lr': 0.005,
+    'class_num': 100,
+    'embed_dim': 200,
+    'relation_dim': 100,
+    'nhead': 4,
+    'batch_size': 512,
+    'kill_cut': 100
     }
 )
